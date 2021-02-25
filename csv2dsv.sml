@@ -1,8 +1,7 @@
-exception emptyInputFile
-exception UnevenFields of string
-
 fun convertDelimiters (infilename : string, delim1 : string, outfilename : string, delim2 : string) =
 	let
+		exception emptyInputFile
+		exception UnevenFields of string
 		open TextIO
 		val read = openIn(infilename) handle Io => raise emptyInputFile
 		val write = openOut(outfilename)
@@ -86,7 +85,3 @@ fun convertDelimiters (infilename : string, delim1 : string, outfilename : strin
 fun csv2tsv(infilename : string, outfilename : string) = convertDelimiters (infilename, ",", outfilename, "\t");
 
 fun tsv2csv(infilename : string, outfilename : string) = convertDelimiters (infilename, "\t", outfilename, ",");
-
-convertDelimiters("a.txt", ",", "b.txt", ";");
-csv2tsv("a.csv", "b.tsv");
-tsv2csv("b.tsv", "m.csv");
