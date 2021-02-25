@@ -1,7 +1,10 @@
+exception emptyInputFile
+exception UnevenFields of string
+
 fun convertDelimiters (infilename : string, delim1 : string, outfilename : string, delim2 : string) =
 	let
 		open TextIO
-		val read = openIn(infilename)
+		val read = openIn(infilename) handle Io => raise emptyInputFile
 		val write = openOut(outfilename)
 		fun genField(istr : instream, start : bool, double : bool, quotes : bool) : string =
 		(*it generates the complete field starting from the current character till the next delimiter
@@ -38,7 +41,7 @@ fun convertDelimiters (infilename : string, delim1 : string, outfilename : strin
 		(*it generates the complete Record starting from the current element;
 		istr points to just before the start of the first field after the last field*)
 			if (ord(ch) = 10) then
-				str(ch) + toString(count)
+				str(ch) ^ Int.toString(count)
 			else if start then
 				let
 					val a = genField(istr, true, false, false)
@@ -51,12 +54,39 @@ fun convertDelimiters (infilename : string, delim1 : string, outfilename : strin
 				in
 					delim2 ^ substring(a, 0, (size(a) - 1)) ^ genRecord(String.sub(a, (size(a) - 1)), istr, false, (count + 1))
 				end
+		fun convert(istr : instream, ostr : outstream, line : int, numFields : int) : unit =
+			if (line = 1) then
+				if (lookahead(istr) = NONE) then
+					raise emptyInputFile
+				else
+					let
+						val record = genRecord(#"1", istr, true, 0)
+					in
+						output(ostr, substring(record, 0, (size(record) - 1)));
+						convert(istr, ostr, 2, valOf(Int.fromString(str(String.sub(record, (size(record) - 1))))))
+					end
+			else
+				if (not (lookahead(istr) = NONE)) then
+					let
+						val record = genRecord(#"1", istr, true, 0)
+					in
+						if (valOf(Int.fromString(str(String.sub(record, (size(record) - 1))))) = numFields) then
+							(output(ostr, (String.substring(record, 0, (size(record) - 1))));
+							convert(istr, ostr, (line + 1), numFields))
+						else
+							raise UnevenFields("Expected: " ^ Int.toString(numFields) ^ " fields, Present: " ^ str(String.sub(record, (size(record) - 1))) ^ " fields on Line " ^ Int.toString(line) ^ "\n")
+					end
+				else ()
 	in
-		()
-	end
+		convert(read, write, 1, 0);
+		closeIn(read);
+		closeOut(write)
+ 	end
 
 fun csv2tsv(infilename : string, outfilename : string) = convertDelimiters (infilename, ",", outfilename, "\t");
 
 fun tsv2csv(infilename : string, outfilename : string) = convertDelimiters (infilename, "\t", outfilename, ",");
 
-convertDelimiters("a.txt", ",", "b.txt", ";")
+convertDelimiters("a.txt", ",", "b.txt", ";");
+csv2tsv("a.csv", "b.tsv");
+tsv2csv("b.tsv", "m.csv");
