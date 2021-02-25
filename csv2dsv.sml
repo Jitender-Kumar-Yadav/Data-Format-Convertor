@@ -1,7 +1,7 @@
 exception emptyInputFile
 exception UnevenFields of string
 
-fun convertDelimiters (infilename : string, delim1 : string, outfilename : string, delim2 : string) =
+fun convertDelimiters (infilename : string, delim1 : char, outfilename : string, delim2 : char) =
 	let
 		open TextIO
 		val read = openIn(infilename) handle Io => raise emptyInputFile
@@ -15,11 +15,11 @@ fun convertDelimiters (infilename : string, delim1 : string, outfilename : strin
 			in
 				if (start andalso ch = #"\"") then
 					"\"" ^ genField(istr, false, true, true)
-				else if (start andalso ((ord(ch) = 10) orelse (str(ch) = delim1))) then
+				else if (start andalso ((ord(ch) = 10) orelse (ch = delim1))) then
 					"\"" ^ "\"" ^ str(ch)
 				else if (start) then
 					"\"" ^ str(ch) ^ genField(istr, false, false, false)
-				else if ((ord(ch) = 10) orelse (str(ch) = delim1)) then
+				else if ((ord(ch) = 10) orelse (ch = delim1)) then
 					if quotes then
 						str(ch) ^ genField(istr, false, true, true)
 					else if double then
@@ -34,8 +34,8 @@ fun convertDelimiters (infilename : string, delim1 : string, outfilename : strin
 				else if double then
 					str(ch) ^ genField(istr, false, true, true)
 				else
-					if (str(ch) = delim1) then
-						delim2 ^ genField(istr, false, false, false)
+					if (ch = delim1) then
+						str(delim2) ^ genField(istr, false, false, false)
 					else
 						str(ch) ^ genField(istr, false, false, false)
 			end
@@ -54,7 +54,7 @@ fun convertDelimiters (infilename : string, delim1 : string, outfilename : strin
 				let
 					val a = genField(istr, true, false, false)
 				in
-					delim2 ^ substring(a, 0, (size(a) - 1)) ^ genRecord(String.sub(a, (size(a) - 1)), istr, false, (count + 1))
+					str(delim2) ^ substring(a, 0, (size(a) - 1)) ^ genRecord(String.sub(a, (size(a) - 1)), istr, false, (count + 1))
 				end
 		fun convert(istr : instream, ostr : outstream, line : int, numFields : int) : unit =
 			if (line = 1) then
@@ -85,6 +85,6 @@ fun convertDelimiters (infilename : string, delim1 : string, outfilename : strin
 		closeOut(write)
  	end
 
-fun csv2tsv(infilename : string, outfilename : string) = convertDelimiters (infilename, ",", outfilename, "\t");
+fun csv2tsv(infilename : string, outfilename : string) = convertDelimiters (infilename, #",", outfilename, #"\t");
 
-fun tsv2csv(infilename : string, outfilename : string) = convertDelimiters (infilename, "\t", outfilename, ",");
+fun tsv2csv(infilename : string, outfilename : string) = convertDelimiters (infilename, #"\t", outfilename, #",");
