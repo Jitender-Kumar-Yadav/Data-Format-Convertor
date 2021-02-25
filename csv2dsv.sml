@@ -1,7 +1,8 @@
+exception emptyInputFile
+exception UnevenFields of string
+
 fun convertDelimiters (infilename : string, delim1 : string, outfilename : string, delim2 : string) =
 	let
-		exception emptyInputFile
-		exception UnevenFields of string
 		open TextIO
 		val read = openIn(infilename) handle Io => raise emptyInputFile
 		val write = openOut(outfilename)
@@ -14,6 +15,8 @@ fun convertDelimiters (infilename : string, delim1 : string, outfilename : strin
 			in
 				if (start andalso ch = #"\"") then
 					"\"" ^ genField(istr, false, true, true)
+				else if (start andalso ((ord(ch) = 10) orelse (str(ch) = delim1))) then
+					"\"" ^ "\"" ^ str(ch)
 				else if (start) then
 					"\"" ^ str(ch) ^ genField(istr, false, false, false)
 				else if ((ord(ch) = 10) orelse (str(ch) = delim1)) then
